@@ -1,0 +1,130 @@
+#include "ina3221_sensor.h"
+#include "esp_log.h"
+#include "driver/i2c_master.h"
+#include "esp_mac.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#define I2C_MASTER_SCL_IO          22    // GPIO number for I2C master clock
+#define I2C_MASTER_SDA_IO          21    // GPIO number for I2C master data
+#define I2C_MASTER_NUM             I2C_NUM_1  // I2C port number for master
+#define I2C_MASTER_FREQ_HZ         100000 // I2C master clock frequency
+
+static const char *TAG = "INA3221";
+
+static i2c_master_bus_handle_t bus_handle;
+static i2c_master_dev_handle_t dev_handle;
+
+#define I2C_RETRY_COUNT 5
+
+esp_err_t ina3221_init(void)
+{
+    // Configure I2C master bus
+    i2c_master_bus_config_t i2c_mst_config = {
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .i2c_port = I2C_MASTER_NUM,
+        .scl_io_num = I2C_MASTER_SCL_IO,
+        .sda_io_num = I2C_MASTER_SDA_IO,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true,
+    };
+
+    esp_err_t ret = i2c_new_master_bus(&i2c_mst_config, &bus_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize I2C master bus: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    // Configure INA3221 device
+    i2c_device_config_t dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = INA3221_ADDR,
+        .scl_speed_hz = I2C_MASTER_FREQ_HZ,
+    };
+
+    ret = i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add INA3221 device: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    // Configure the INA3221 to enable all channels
+    uint16_t config = INA3221_CONFIG_ENABLE_CH1 | INA3221_CONFIG_ENABLE_CH2 | INA3221_CONFIG_ENABLE_CH3 | INA3221_CONFIG_DEFAULT;
+    uint8_t config_data[3] = { INA3221_REG_CONFIG, (config >> 8) & 0xFF, config & 0xFF };
+
+    ret = i2c_master_transmit(dev_handle, config_data, sizeof(config_data), -1);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to configure INA3221: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t ina3221_read(uint8_t reg, uint8_t *data_rd, size_t length)
+{
+    uint8_t buffer[1] = { reg };
+    esp_err_t ret;
+
+    for (int i = 0; i < I2C_RETRY_COUNT; i++) {
+        ret = i2c_master_transmit_receive(dev_handle, buffer, sizeof(buffer), data_rd, length, -1);
+        if (ret == ESP_OK) {
+            return ESP_OK;
+        }
+        ESP_LOGW(TAG, "I2C read attempt %d failed: %s (reg: 0x%02x, len: %d)", i + 1, esp_err_to_name(ret), reg, length);
+        vTaskDelay(200); // Increased delay before retrying
+    }
+    
+    ESP_LOGE(TAG, "Failed to read from INA3221 after %d attempts: %s", I2C_RETRY_COUNT, esp_err_to_name(ret));
+    return ret;
+}
+
+esp_err_t ina3221_read_channel(uint8_t channel, ina3221_reading_t *reading)
+{
+    uint8_t reg_shunt, reg_bus;
+    switch (channel) {
+        case 1:
+            reg_shunt = INA3221_REG_SHUNT_VOLTAGE_CH1;
+            reg_bus = INA3221_REG_BUS_VOLTAGE_CH1;
+            break;
+        case 2:
+            reg_shunt = INA3221_REG_SHUNT_VOLTAGE_CH2;
+            reg_bus = INA3221_REG_BUS_VOLTAGE_CH2;
+            break;
+        case 3:
+            reg_shunt = INA3221_REG_SHUNT_VOLTAGE_CH3;
+            reg_bus = INA3221_REG_BUS_VOLTAGE_CH3;
+            break;
+        default:
+            return ESP_ERR_INVALID_ARG;
+    }
+
+    uint8_t data[2];
+
+    // Read shunt voltage
+    esp_err_t ret = ina3221_read(reg_shunt, data, 2);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read shunt voltage from channel %d", channel);
+        return ret;
+    }
+    int16_t shunt_voltage_raw = (data[0] << 8) | data[1];
+
+    // Read bus voltage
+    ret = ina3221_read(reg_bus, data, 2);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read bus voltage from channel %d", channel);
+        return ret;
+    }
+    int16_t bus_voltage_raw = (data[0] << 8) | data[1];
+
+    // Calculate voltages and current
+    reading->shunt_voltage = shunt_voltage_raw * 0.01; // Convert 10uV to mV
+    reading->bus_voltage = bus_voltage_raw * 0.001; // Convert mV to V
+    reading->load_voltage = reading->bus_voltage - (reading->shunt_voltage * 0.001); // Convert mV to V
+    reading->current = reading->shunt_voltage / SHUNT_RESISTOR_OHMS; // Current in mA
+
+    ESP_LOGI(TAG, "Channel %d - Bus Voltage: %.2f V, Shunt Voltage: %.2f mV, Load Voltage: %.2f V, Current: %.2f mA",
+             channel, reading->bus_voltage, reading->shunt_voltage, reading->load_voltage, reading->current);
+
+    return ESP_OK;
+}

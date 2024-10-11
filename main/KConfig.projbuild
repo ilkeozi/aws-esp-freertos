@@ -1,0 +1,657 @@
+menu "PB Aws Integration"
+   
+    config APP_WIFI_PROV_SHOW_QR
+        bool "Show provisioning QR code"
+        default y
+        help
+            Show the QR code for provisioning.
+    choice APP_WIFI_PROV_TRANSPORT
+        bool "Provisioning Transport method"
+        default APP_WIFI_PROV_TRANSPORT_BLE
+        help
+            Wi-Fi provisioning component offers both, SoftAP and BLE transports. Choose any one.
+    config APP_WIFI_PROV_TRANSPORT_SOFTAP
+        bool "Soft AP"
+    config APP_WIFI_PROV_TRANSPORT_BLE
+        bool "BLE"
+        select BT_ENABLED
+    endchoice
+
+    config APP_WIFI_PROV_TRANSPORT
+        int
+        default 1 if APP_WIFI_PROV_TRANSPORT_SOFTAP
+        default 2 if APP_WIFI_PROV_TRANSPORT_BLE
+
+    config GRI_RUN_QUALIFICATION_TEST
+        bool "Run qualification test."
+        default n
+        help
+            Enable to run qualification test. Use configurations in test_execution_config.h and test_param_config.h.
+            Disable to . Use configurations below (in sdkconfig).
+
+    menu "Qualification Test Configurations"
+
+        menu "Qualification Execution Test Configurations"
+            config GRI_DEVICE_ADVISOR_TEST_ENABLED
+                bool "Device Advisor Test."
+                default n
+
+            config GRI_MQTT_TEST_ENABLED
+                bool "MQTT Test."
+                default n
+
+            config GRI_TRANSPORT_INTERFACE_TEST_ENABLED
+                bool "Transport Interface Test."
+                default n
+
+            config GRI_OTA_PAL_TEST_ENABLED
+                bool "OTA PAL Test."
+                default n
+
+            config GRI_OTA_E2E_TEST_ENABLED
+                bool "OTA end-to-end Test."
+                default n
+
+            config GRI_CORE_PKCS11_TEST_ENABLED
+                bool "CorePKCS#11 Test."
+                default n
+
+        endmenu # "Qualification Execution Test Configurations"
+
+        menu "Qualification Parameter Configurations"
+            config GRI_QUALIFICATION_FORCE_GENERATE_NEW_KEY_PAIR
+                bool "Generate a key pair."
+                default n
+
+            config GRI_QUALIFICATION_MQTT_ENDPOINT
+                string "Endpoint for MQTT Broker to use"
+                default "PLACE_HOLDER"
+                help
+                    MQTT Broker for Device Advisor Test/MQTT Test/OTA end-to-end Test.
+
+            config GRI_QUALIFICATION_MQTT_PORT
+                int "Port for MQTT Broker to use"
+                default 8883
+
+            config GRI_QUALIFICATION_CLIENT_IDENTIFIER
+                string "Client Identifier for MQTT Test"
+                default "PLACE_HOLDER"
+
+            config GRI_QUALIFICATION_NETWORK_BUFFER_SIZE
+                int "Network Buffer Size for MQTT Test"
+                default 5000
+
+            config GRI_QUALIFICATION_PROCESS_LOOP_TIMEOUT_MS
+                int "Timeout to run MQTT process loop for MQTT Test"
+                default 700
+
+            config GRI_QUALIFICATION_ECHO_SERVER
+                string "Echo Server Domain Name/IP for Transport Interface Test"
+                default "PLACE_HOLDER"
+                help
+                    Domain Name or IP address for Transport Interface Test.
+
+            config GRI_QUALIFICATION_ECHO_SERVER_PORT
+                int "Port for Echo Server to use"
+                default 9000
+
+            config GRI_QUALIFICATION_OTA_PAL_CERTIFICATE_FILE
+                string "Path to cert for OTA PAL Test."
+                default ""
+
+            config GRI_QUALIFICATION_OTA_PAL_FIRMWARE_FILE
+                string "Path to store firmware for OTA PAL Test."
+                default "/"
+
+            config GRI_QUALIFICATION_OTA_PAL_USE_FILE_SYSTEM
+                bool "Use File System for OTA PAL Test."
+                default n
+
+            config GRI_QUALIFICATION_THING_NAME
+                string "Thing Name for Device Advisor Test/OTA end-to-end Test"
+                default "PLACE_HOLDER"
+
+            config GRI_QUALIFICATION_OTA_APP_VERSION_MAJOR
+                int "Application version major for OTA end-to-end Test."
+                default 0
+
+            config GRI_QUALIFICATION_OTA_APP_VERSION_MINOR
+                int "Application version minor for OTA end-to-end Test."
+                default 9
+
+            config GRI_QUALIFICATION_OTA_APP_VERSION_BUILD
+                int "Application version build for OTA end-to-end Test."
+                default 0
+        endmenu # "Qualification Parameter Configurations"
+
+        menu "Pub Sub configurations"
+            config GRI_SUB_PUB_UNSUB_STRING_BUFFER_LENGTH
+                int "Topic name and payload buffer length"
+                default 100
+                help
+                    Size of statically allocated buffers for holding topic names and payloads.
+
+            config GRI_SUB_PUB_UNSUB_DELAY_BETWEEN_SUB_PUB_UNSUB_LOOPS_MS
+                int "Delay between sub pub unsub loops in milliseconds"
+                default 5000
+                help
+                    Delay for each task between subscription, publish, unsubscription loops.
+
+            config GRI_SUB_PUB_UNSUB_MAX_COMMAND_SEND_BLOCK_TIME_MS
+                int "coreMQTT-Agent command post block time in milliseconds."
+                default 500
+                help
+                    The maximum amount of time in milliseconds to wait for the commands to be posted to the MQTT agent should the MQTT agent's command queue be full. Tasks wait in the Blocked state, so don't use any CPU time.
+
+            config GRI_SUB_PUB_UNSUB_QOS_LEVEL
+                int "QoS level of MQTT operations"
+                default 1
+                range 0 2
+                help
+                    The QoS level of MQTT messages sent by this . This must be 0 or 1 if using AWS as AWS only supports levels 0 or 1. If using another MQTT broker, that supports QoS level 2, this can be set to 2.
+
+            config GRI_SUB_PUB_UNSUB_NUM_TASKS_TO_CREATE
+                int "Number of SubPubUnsub tasks to create"
+                default 1
+                help
+                    The number of SubPubUnsub tasks to create for this .
+
+            config GRI_SUB_PUB_UNSUB_TASK_PRIORITY
+                int "SubPubUnsub task priority."
+                default 1
+                help
+                    The task priority of each of the SubPubUnsub tasks.
+
+            config GRI_SUB_PUB_UNSUB_TASK_STACK_SIZE
+                int "SubPubUnsub task stack size."
+                default 3072
+                help
+                    The task stack size for each of the SubPubUnsub tasks.
+
+        endmenu # Sub pub unsub  configurations
+
+        menu "OTA  configurations"
+            config GRI_OTA_MAX_FILE_PATH_SIZE
+                int "Max file path size."
+                default 260
+                help
+                    The maximum size of the file paths used in the .
+
+            config GRI_OTA_MAX_STREAM_NAME_SIZE
+                int "Max stream name size."
+                default 128
+                help
+                    The maximum size of the stream name required for downloading update file from streaming service.
+
+            config GRI_OTA_TASK_DELAY_MS
+                int "OTA statistic output delay milliseconds."
+                default 1000
+                help
+                    The delay used in the OTA  task to periodically output the OTA statistics like number of packets received, dropped, processed and queued per connection.
+
+            config GRI_OTA_MQTT_TIMEOUT_MS
+                int "MQTT operation timeout milliseconds."
+                default 5000
+                help
+                    The maximum time for which OTA  waits for an MQTT operation to be complete. This involves receiving an acknowledgment for broker for SUBSCRIBE, UNSUBSCRIBE and non QOS0 publishes.
+
+            config GRI_OTA_AGENT_TASK_PRIORITY
+                int "OTA agent task priority."
+                default 4
+
+            config GRI_OTA_AGENT_TASK_STACK_SIZE
+                int "OTA agent task stack size."
+                default 4096
+
+            config GRI_OTA_TASK_PRIORITY
+                int "OTA  task priority."
+                default 1
+
+            config GRI_OTA_TASK_STACK_SIZE
+                int "OTA  task stack size."
+                default 3072
+
+        endmenu # OTA  configurations
+    endmenu # Qualification Test Configurations
+
+
+    config GRI_MQTT_ENDPOINT
+        string "Endpoint for MQTT Broker to use"
+        depends on !GRI_RUN_QUALIFICATION_TEST
+        default ""
+
+    config GRI_MQTT_PORT
+        int "Port for MQTT Broker to use"
+        depends on !GRI_RUN_QUALIFICATION_TEST
+        default 8883
+
+    config GRI_THING_NAME
+        string "Thing name"
+        depends on !GRI_RUN_QUALIFICATION_TEST
+        default ""
+
+    config GRI_OUTPUT_CERTS_KEYS
+        bool "Output provisioned certificates and keys."
+        default y
+
+    menu "coreMQTT-Agent Manager Configurations"
+
+        config GRI_MQTT_AGENT_TASK_STACK_SIZE
+            int "coreMQTT-Agent task stack size"
+            default 4096
+
+        config GRI_MQTT_AGENT_TASK_PRIORITY
+            int "coreMQTT-Agent task priority"
+            default 4
+
+        config GRI_CONNECTION_TASK_STACK_SIZE
+            int "Connection handling task stack size"
+            default 3072
+
+        config GRI_CONNECTION_TASK_PRIORITY
+            int "Connection handling task priority"
+            default 4
+
+        config GRI_RETRY_MAX_BACKOFF_DELAY_MS
+            int "Maximum backoff delay on connection retry in milliseconds"
+            default 5000
+
+        config GRI_RETRY_BACKOFF_BASE_MS
+            int "Base back-off delay on connection retry in milliseconds"
+            default 500
+
+        config GRI_MQTT_AGENT_NETWORK_BUFFER_SIZE
+            int "coreMQTT-Agent network buffer size"
+            default 10000
+
+        config GRI_MQTT_AGENT_COMMAND_QUEUE_LENGTH
+            int "coreMQTT-Agent command queue length"
+            default 10
+
+        config GRI_MQTT_AGENT_KEEP_ALIVE_INTERVAL_SECONDS
+            int "coreMQTT-Agent keep alive interval in seconds"
+            default 60
+            help
+                The maximum time interval in seconds which is allowed to elapsed between two Control Packets.
+
+        config GRI_MQTT_AGENT_CONNACK_RECV_TIMEOUT_MS
+            int "Timeout for receiving CONNACK in milliseconds"
+            default 1000
+
+
+    endmenu # coreMQTT-Agent Manager Configurations
+
+    config GRI_ENABLE_SUB_PUB_UNSUB
+        bool "Enable pub sub unsub "
+        depends on !GRI_RUN_QUALIFICATION_TEST
+        default y
+
+    menu "Sub pub unsub  configurations"
+        depends on GRI_ENABLE_SUB_PUB_UNSUB
+
+        config GRI_SUB_PUB_UNSUB_STRING_BUFFER_LENGTH
+            int "Topic name and payload buffer length"
+            default 100
+            help
+                Size of statically allocated buffers for holding topic names and payloads.
+
+        config GRI_SUB_PUB_UNSUB_DELAY_BETWEEN_SUB_PUB_UNSUB_LOOPS_MS
+            int "Delay between sub pub unsub loops in milliseconds"
+            default 5000
+            help
+                Delay for each task between subscription, publish, unsubscription loops.
+
+        config GRI_SUB_PUB_UNSUB_MAX_COMMAND_SEND_BLOCK_TIME_MS
+            int "coreMQTT-Agent command post block time in milliseconds."
+            default 500
+            help
+                The maximum amount of time in milliseconds to wait for the commands to be posted to the MQTT agent should the MQTT agent's command queue be full. Tasks wait in the Blocked state, so don't use any CPU time.
+
+        config GRI_SUB_PUB_UNSUB_QOS_LEVEL
+            int "QoS level of MQTT operations"
+            default 1
+            range 0 2
+            help
+                The QoS level of MQTT messages sent by this . This must be 0 or 1 if using AWS as AWS only supports levels 0 or 1. If using another MQTT broker, that supports QoS level 2, this can be set to 2.
+
+        config GRI_SUB_PUB_UNSUB_NUM_TASKS_TO_CREATE
+            int "Number of SubPubUnsub tasks to create"
+            default 1
+            help
+                The number of SubPubUnsub tasks to create for this .
+
+        config GRI_SUB_PUB_UNSUB_TASK_PRIORITY
+            int "SubPubUnsub task priority."
+            default 1
+            help
+                The task priority of each of the SubPubUnsub tasks.
+
+        config GRI_SUB_PUB_UNSUB_TASK_STACK_SIZE
+            int "SubPubUnsub task stack size."
+            default 3072
+            help
+                The task stack size for each of the SubPubUnsub tasks.
+
+    endmenu # Sub pub unsub  configurations
+
+    config GRI_ENABLE_TEMPERATURE_PUB_SUB_AND_LED_CONTROL
+        bool "Enable temperature sensor pub sub and LED control "
+        depends on !GRI_RUN_QUALIFICATION_TEST
+        default y
+
+    menu "Temperature pub sub and LED control  configurations"
+        depends on GRI_ENABLE_TEMPERATURE_PUB_SUB_AND_LED_CONTROL
+
+        choice GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_LED_TYPE
+            prompt "LED type"
+            default GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_LED_GPIO if IDF_TARGET_ESP32 || IDF_TARGET_ESP32C2
+            default GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_LED_RMT
+            help
+                Defines the default peripheral for the GRI
+
+            config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_LED_GPIO
+                bool "GPIO"
+            config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_LED_RMT
+                bool "RMT - Addressable LED"
+        endchoice
+
+        config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_LED_GPIO_NUMBER
+            int "GRI GPIO number"
+            default 8 if IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32H2 || IDF_TARGET_ESP32C2
+            default 18 if IDF_TARGET_ESP32S2
+            default 48 if IDF_TARGET_ESP32S3
+            default 5
+            help
+                GPIO number (IOxx) to blink on and off or the RMT signal for the addressable LED.
+                Some GPIOs are used for other purposes (flash connections, etc.) and cannot be used for LED.
+
+        config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_STRING_BUFFER_LENGTH
+            int "Topic name and payload buffer length"
+            default 150
+            help
+                Size of statically allocated buffers for holding topic names and payloads.
+
+        config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_DELAY_BETWEEN_PUBLISH_OPERATIONS_MS
+            int "Delay between publishes in milliseconds"
+            default 3000
+            help
+                Delay for the synchronous publisher task between publishes.
+
+        config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_MAX_COMMAND_SEND_BLOCK_TIME_MS
+            int "coreMQTT-Agent command post block time in milliseconds."
+            default 500
+            help
+                The maximum amount of time in milliseconds to wait for the commands to be posted to the MQTT agent should the MQTT agent's command queue be full. Tasks wait in the Blocked state, so don't use any CPU time.
+
+        config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_QOS_LEVEL
+            int "QoS level of MQTT operations"
+            default 1
+            range 0 2
+            help
+                The QoS level of MQTT messages sent by this . This must be 0 or 1 if using AWS as AWS only supports levels 0 or 1. If using another MQTT broker, that supports QoS level 2, this can be set to 2.
+
+        config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_TASK_PRIORITY
+            int "Temperature sensor publishing task priority."
+            default 1
+            help
+                The task priority of the temperature sensor publishing task.
+
+        config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_TASK_STACK_SIZE
+            int "Temperature sensor publishing task stack size."
+            default 3072
+            help
+                The task stack size of the temperature sensor publishing task.
+
+    endmenu # Temperature pub sub and LED control  configurations
+
+    config GRI_ENABLE_OTA
+        bool "Enable OTA "
+        depends on !GRI_RUN_QUALIFICATION_TEST
+        default y
+
+    menu "OTA  configurations"
+        depends on GRI_ENABLE_OTA
+
+        config GRI_OTA_MAX_FILE_PATH_SIZE
+            int "Max file path size."
+            default 260
+            help
+                The maximum size of the file paths used in the .
+
+        config GRI_OTA_MAX_STREAM_NAME_SIZE
+            int "Max stream name size."
+            default 128
+            help
+                The maximum size of the stream name required for downloading update file from streaming service.
+
+        config GRI_OTA_TASK_DELAY_MS
+            int "OTA statistic output delay milliseconds."
+            default 1000
+            help
+                The delay used in the OTA  task to periodically output the OTA statistics like number of packets received, dropped, processed and queued per connection.
+
+        config GRI_OTA_MQTT_TIMEOUT_MS
+            int "MQTT operation timeout milliseconds."
+            default 5000
+            help
+                The maximum time for which OTA  waits for an MQTT operation to be complete. This involves receiving an acknowledgment for broker for SUBSCRIBE, UNSUBSCRIBE and non QOS0 publishes.
+
+        config GRI_OTA_AGENT_TASK_PRIORITY
+            int "OTA agent task priority."
+            default 4
+
+        config GRI_OTA_AGENT_TASK_STACK_SIZE
+            int "OTA agent task stack size."
+            default 4096
+
+        config GRI_OTA_TASK_PRIORITY
+            int "OTA  task priority."
+            default 1
+
+        config GRI_OTA_TASK_STACK_SIZE
+            int "OTA  task stack size."
+            default 3072
+
+        config GRI_OTA_APP_VERSION_MAJOR
+            int "Application version major."
+            default 0
+
+        config GRI_OTA_APP_VERSION_MINOR
+            int "Application version minor."
+            default 0
+
+        config GRI_OTA_APP_VERSION_BUILD
+            int "Application version build."
+            default 0
+
+    endmenu # OTA  configurations
+
+    
+    config PB_LED
+        bool "Enable led  "
+        default y
+
+    menu "PB configurations"
+        depends on PB_LED
+
+        config PB_CITY
+            string "City"
+            default "default_city"
+            help
+                The city where the device is deployed.
+
+        config PB_AREA
+            string "Area"
+            default "default_area"
+            help
+                The area within the city where the device is deployed.
+
+        config PB_ZONE
+            string "Zone"
+            default "default_zone"
+            help
+                The zone within the area where the device is deployed.
+        
+        config LED_GPIO_NUMBER
+            int "Led GPIO pin"
+            default 26
+            help
+                The pin number led strip is connected to.
+        
+        config PB_LED_RMT
+            bool "Rmt enabled "
+            default y
+            help
+                Weather to use rmt
+
+        config PB_L298N_IN1_GPIO
+            int "Motor Driver IN1 Pin"
+            default 32
+            help
+                The pin number Motor Driver IN1  is connected to.
+        config PB_L298N_IN2_GPIO
+            int "Motor Driver IN2 Pin"
+            default 33
+            help
+                The pin number Motor Driver IN2  is connected to.
+                
+        config PB_LOCKED_LIMIT_SWITCH_GPIO
+            int "Locked Limit Switch Pin"
+            default 12
+            help
+                The pin number locked limit switch is connected to.
+        config PB_UNLOCKED_LIMIT_SWITCH_GPIO
+            int "Unlocked Limit Switch Pin"
+            default 14
+            help
+                The pin number unlocked limit switch is connected to.
+        config PB_MODEM_DEVICE_SIM7600
+            bool "SIM7600"
+            help
+                SIM7600 is a Multi-Band LTE-TDD/LTE-FDD/HSPA+ and GSM/GPRS/EDGE module.
+        config PB_SERIAL_CONFIG_USB
+            bool "Modem Device"
+            default y
+            help
+                Modem usb.
+        config PB_SERIAL_CONFIG_UART
+            bool "EXAMPLE_SERIAL_CONFIG_UART"
+            default y
+            help
+                Modem UART.
+                
+    endmenu # PB Led  configurations  
+
+    menu "PB UART Configuration"
+        depends on PB_SERIAL_CONFIG_UART
+        config PB_MODEM_UART_TX_PIN
+            int "TXD Pin Number"
+            default 25
+            range 0 31
+            help
+                Pin number of UART TX.
+
+        config PB_MODEM_UART_RX_PIN
+            int "RXD Pin Number"
+            default 26
+            range 0 31
+            help
+                Pin number of UART RX.
+
+        config PB_MODEM_UART_RTS_PIN
+            int "RTS Pin Number"
+            default 27
+            range 0 31
+            help
+                Pin number of UART RTS.
+
+        config PB_MODEM_UART_CTS_PIN
+            int "CTS Pin Number"
+            default 23
+            range 0 31
+            help
+                Pin number of UART CTS.
+
+        config PB_MODEM_UART_EVENT_TASK_STACK_SIZE
+            int "UART Event Task Stack Size"
+            range 2000 6000
+            default 2048
+            help
+                Stack size of UART event task.
+
+        config PB_MODEM_UART_EVENT_TASK_PRIORITY
+            int "UART Event Task Priority"
+            range 3 22
+            default 5
+            help
+                Priority of UART event task.
+
+        config PB_MODEM_UART_EVENT_QUEUE_SIZE
+            int "UART Event Queue Size"
+            range 10 40
+            default 30
+            help
+                Length of UART event queue.
+
+        config PB_MODEM_UART_PATTERN_QUEUE_SIZE
+            int "UART Pattern Queue Size"
+            range 10 40
+            default 20
+            help
+                Length of UART pattern queue.
+
+        config PB_MODEM_UART_TX_BUFFER_SIZE
+            int "UART TX Buffer Size"
+            range 256 2048
+            default 512
+            help
+                Buffer size of UART TX buffer.
+
+        config PB_MODEM_UART_RX_BUFFER_SIZE
+            int "UART RX Buffer Size"
+            range 256 2048
+            default 1024
+            help
+                Buffer size of UART RX buffer.
+        
+        config PB_MODEM_PPP_APN
+            string "APN for internet"
+            default "internet"
+            help
+                APN name.
+
+        choice PB_FLOW_CONTROL
+            bool "Set preferred modem control flow"
+            default PB_FLOW_CONTROL_NONE
+            help
+                Set the modem's preferred control flow
+
+            config PB_FLOW_CONTROL_NONE
+                bool "No control flow"
+            config PB_FLOW_CONTROL_SW
+                bool "SW control flow"
+            config PB_FLOW_CONTROL_HW
+                bool "HW control flow"
+        endchoice
+
+    endmenu
+
+    config PB_MQTT_BROKER_URI
+        string "MQTT Broker URL"
+        default "mqtt://mqtt.eclipseprojects.io"
+        help
+            URL of the mqtt broker which this example connects to.
+
+    config PB_MQTT_TEST_TOPIC
+        string "MQTT topic to publish/subscribe"
+        default "/topic/esp-pppos"
+        help
+            MQTT topic, which we subscribe on and publish to.
+
+    config PB_MQTT_TEST_DATA
+        string "MQTT data to publish/receive"
+        default "esp32-pppos"
+        help
+            MQTT data message, which we publish and expect to receive.
+
+endmenu # PB AWS Integration

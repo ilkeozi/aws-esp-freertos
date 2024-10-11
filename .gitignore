@@ -1,0 +1,6 @@
+*.crt
+*.key
+
+/build
+.vscode
+*.bin

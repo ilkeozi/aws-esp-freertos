@@ -1,0 +1,33 @@
+dependencies:
+  espressif/esp_modem:
+    component_hash: e48da33fee082dd9d9a97a354a228057e07a14ac108766b40ad84e018205410a
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 1.1.0
+  espressif/esp_secure_cert_mgr:
+    component_hash: null
+    source:
+      path: /Users/ilker/pb-aws-deneme/components/espressif__esp_secure_cert_mgr
+      type: local
+    version: 2.4.1
+  espressif/led_strip:
+    component_hash: fc66f8544851132555bc668475f7b68acd6a211c8075db5ce1951cbfa27dfb88
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 2.5.4
+  espressif/qrcode:
+    component_hash: null
+    source:
+      path: /Users/ilker/pb-aws-deneme/components/espressif__qrcode
+      type: local
+    version: 0.1.0~2
+  idf:
+    component_hash: null
+    source:
+      type: idf
+    version: 5.4.0
+manifest_hash: be4a160e7158af375304ed1a515907c81031d99d38be35c765bef62e6b93ea53
+target: esp32
+version: 1.0.0
