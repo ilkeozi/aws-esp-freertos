@@ -1,31 +1,3 @@
-/*
- * ESP32-C3 FreeRTOS Reference Integration V202204.00
- * Copyright (C) 2022 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * https://www.FreeRTOS.org
- * https://github.com/FreeRTOS
- *
- */
-
-/* Includes *******************************************************************/
-
 /* Standard includes. */
 #include <string.h>
 
@@ -275,11 +247,11 @@ static void prvStartEnabledDemos( void )
         }
 
         #if CONFIG_PB_LED
-            //vStartLEDControl();
+            vStartLEDControl();
             vStartBarrierControl();
-            //vStartPowerPerception();
-            //vStartObstaclePerception();
-            //vStartWifiPerception();
+            vStartPowerPerception();
+            vStartObstaclePerception();
+            vStartWifiPerception();
         #endif /* CONFIG_GRI_ENABLE_SIMPLE_PUB_SUB */
 
         #if CONFIG_GRI_ENABLE_TEMPERATURE_PUB_SUB_AND_LED_CONTROL
@@ -321,67 +293,6 @@ static void prvStartEnabledDemos( void )
     #endif /* CONFIG_GRI_RUN_QUALIFICATION_TEST */
 }
 
-#include "driver/i2c_master.h"
-
-#define I2C_MASTER_SCL_IO 9        /*!< GPIO number for I2C master clock */
-#define I2C_MASTER_SDA_IO 10        /*!< GPIO number for I2C master data  */
-#define I2C_MASTER_PORT I2C_NUM_0    /*!< I2C port number for master dev */
-#define I2C_MASTER_FREQ_HZ 400000   /*!< I2C master clock frequency  - FAST MODE */
-
-
-static void i2c_scan_task(void *arg) {
-
-
-     // -------------------------
-    // Configure i2c
-
-    // Per these docs:
-    // https://docs.espressif.com/projects/esp-idf/en/v5.2/esp32/api-reference/peripherals/i2c.html#i2c_master_controller
-    // We are configuring the i2c master bus first.
-    i2c_master_bus_config_t i2c_master_config = {
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .i2c_port = I2C_MASTER_PORT,
-        .scl_io_num = I2C_MASTER_SCL_IO,        // SCL pin
-        .sda_io_num = I2C_MASTER_SDA_IO,        // SDA pin
-        .glitch_ignore_cnt = 7,                 // a default from esp's docs
-        .flags.enable_internal_pullup = true,
-    };
-
-    i2c_master_bus_handle_t bus_handle;
-    i2c_new_master_bus(&i2c_master_config, &bus_handle);
-
-    while (1) {
-        
-        printf("Scanning I2C bus...\n");
-
-        for (uint8_t addr = 1; addr < 127; addr++) {
-
-            uint8_t write_address = (addr << 1) | 0;
-            uint8_t read_address = (addr << 1) | 1;
-
-            esp_err_t error_status = i2c_master_probe(bus_handle, 
-                                                      addr, 
-                                                      -1);
-
-            // If we received the ACK bit, we found something! Print its address.
-            if (error_status == ESP_OK) {
-                printf("Found device at address %d (0x%02X)\n", addr, addr);
-                printf("Write address: %d (0x%02X)\n", write_address, write_address);
-                printf("Read address: %d (0x%02X)\n", read_address, read_address);
-                
-            }
-
-         }
-
-        vTaskDelay(2000 / portTICK_PERIOD_MS); // Wait 2 seconds before rescanning.
-    }
-
-
-}
-
-
-/* Main function definition ***************************************************/
-
 /**
  * @brief This function serves as the main entry point of this project.
  */
@@ -418,20 +329,16 @@ void app_main( void )
         ESP_ERROR_CHECK( nvs_flash_init() );
     }
 
-    /* Initialize ESP-Event library default event loop.
-     * This handles WiFi and TCP/IP events and this needs to be called before
-     * starting WiFi and the coreMQTT-Agent network manager. */
+
     ESP_ERROR_CHECK( esp_event_loop_create_default() );
 
-     /* Start demo tasks. This needs to be done before starting WiFi and
-     * and the coreMQTT-Agent network manager so demos can
-     * register their coreMQTT-Agent event handlers before events happen. */
+
     prvStartEnabledDemos();
-    pppos_start();
+    //pppos_start();
 
     /* Start WiFi. */
-    // app_wifi_init();
-    // app_wifi_start( POP_TYPE_MAC );
+    app_wifi_init();
+    app_wifi_start( POP_TYPE_MAC );
 
    
 }

@@ -8,7 +8,7 @@ dependencies:
   espressif/esp_secure_cert_mgr:
     component_hash: null
     source:
-      path: /Users/ilker/pb-aws-deneme/components/espressif__esp_secure_cert_mgr
+      path: /Users/ilker/source/aws-iot-esp/components/espressif__esp_secure_cert_mgr
       type: local
     version: 2.4.1
   espressif/led_strip:
@@ -20,7 +20,7 @@ dependencies:
   espressif/qrcode:
     component_hash: null
     source:
-      path: /Users/ilker/pb-aws-deneme/components/espressif__qrcode
+      path: /Users/ilker/aws-iot-esp/components/espressif__qrcode
       type: local
     version: 0.1.0~2
   idf:

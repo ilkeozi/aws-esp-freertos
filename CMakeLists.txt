@@ -19,4 +19,4 @@ set(EXTRA_COMPONENT_DIRS
     "${CMAKE_CURRENT_LIST_DIR}/esp/esp-idf-lib/components"
     )
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(pb-aws-deneme)
+project(aws-iot-esp)
